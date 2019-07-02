@@ -4,10 +4,11 @@ import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.response.respond
 import io.ktor.util.pipeline.PipelineContext
-import kotlinx.coroutines.newFixedThreadPoolContext
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import pl.otekplay.mojang.error.Errors
+import pl.otekplay.mojang.fetcher.FetchedException
 import pl.otekplay.mojang.fetcher.Fetcher
+import pl.otekplay.mojang.repository.Profile
 
 object Controller {
 
@@ -17,8 +18,22 @@ object Controller {
     ) {
         val name = it.name
         val deferred = Fetcher.request(name)
-        val profile = deferred.await()
-        request.call.respond(profile.premium)
+        val call = request.call
+        try {
+            withTimeout(2500) {
+                val profile: Profile
+                try {
+                    profile = deferred.await()
+                    call.respond(profile.premium)
+                } catch (e: FetchedException) {
+                    call.respond(Errors.HIT_MOJANG_LIMIT_ERROR)
+                    e.printStackTrace()
+                }
+            }
+        } catch (e: TimeoutCancellationException) {
+            call.respond(Errors.TIMEOUT_REQUEST_ERROR)
+            e.printStackTrace()
+        }
 
 
     }

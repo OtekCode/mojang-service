@@ -1,10 +1,9 @@
 package pl.otekplay.mojang.fetcher
 
-import javafx.application.Application.launch
 import kotlinx.coroutines.*
 import pl.otekplay.mojang.checker.Checker
 import pl.otekplay.mojang.repository.Profile
-import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import kotlin.collections.ArrayList
@@ -14,7 +13,7 @@ object Fetcher {
     private val REQUESTS = ConcurrentHashMap<String, CompletableDeferred<Profile>>()
     private val NAMES = LinkedBlockingDeque<String>()
 
-    private val DEFAULT_COROUNTINE = newSingleThreadContext("FetcherMain")
+    private val MAIN_COROUNTINE = newSingleThreadContext("FetcherMain")
 
     init {
         println("Starting fetcher thread...")
@@ -22,22 +21,22 @@ object Fetcher {
     }
 
     fun start() = runBlocking {
-        withContext(DEFAULT_COROUNTINE) {
+        withContext(MAIN_COROUNTINE) {
             while (isActive) {
                 if (NAMES.isEmpty()) {
                     delay(1000)
                     continue
                 }
                 println("Splitting ${NAMES.size} names for requests...")
-                val requests =  collectRequests()
+                val requests = collectRequests()
                 println("Collected ${requests.size} requests:")
                 requests.forEachIndexed { i, array ->
-                    println("${i+1}.Request[Names: ${array.size}]")
+                    println("${i + 1}.Request[Names: ${array.size}]")
                 }
                 println("Sending ${requests.size} requests...")
-                val coroutines = requests.map { launch(context = Dispatchers.IO,start = CoroutineStart.LAZY) { Checker.check(it) } }
-                coroutines.forEach { it.start() }
-                delay(500)
+                requests.map { launch(context = Dispatchers.IO, start = CoroutineStart.LAZY) { Checker.check(it) } }
+                    .forEach { it.start() }
+                delay(250)
                 println("Waiting for requests...")
             }
         }
@@ -50,7 +49,7 @@ object Fetcher {
         return requests
     }
 
-    private fun collectNames(): Array<String>{
+    private fun collectNames(): Array<String> {
         val requestNames = hashSetOf<String>()
         while (requestNames.size < 100) {
             val first = NAMES.pollFirst() ?: break
