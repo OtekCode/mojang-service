@@ -2,6 +2,13 @@
 
 Nonblocking mojang haspaid with ktor & corountines!
 
+### Todo
+* Bypass mojang limit 600 requests per 10 minute (Mutli IP, Delay)
+* Api Key
+* Repository database (mongodb, mysql)
+* Cache profiles
+* Split into microservices(?)
+
 ### Status
 
 Not ready to use yet.
