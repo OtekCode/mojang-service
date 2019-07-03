@@ -8,6 +8,7 @@ import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.get
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.*
+import java.net.URL
 
 
 @KtorExperimentalAPI
@@ -50,13 +51,3 @@ val client
         }
 
     }
-
-
-fun main(args: Array<String>) {
-    val compute = newFixedThreadPoolContext(1024, "FixedThreads")
-    runBlocking {
-        println(IntRange(1, 1000).map {
-            async(compute) { client.get<Boolean>("http://localhost:8080/api/mojang/haspaid/abc$it") }
-        }.awaitAll().size)
-    }
-}
